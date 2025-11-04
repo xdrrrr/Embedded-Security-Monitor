@@ -13,17 +13,18 @@
 #include "alarm.h"
 #include "flash/w25qxx.h" 
 #include "log.h"
-//#include "esp8266.h"
+#include "esp8266.h"
 #include "usart/usart1.h"
 #include "led.h"
 
 
 uint8_t prev_alarm_state = SYS_NORMAL;//避免无效日志
 
-//// 实现一个简单的毫秒中断服务程序（例如使用 SysTick）
-//void SysTick_Handler(void) {
-//    millis_tick++;
-//}
+// 实现一个简单的毫秒中断服务程序（ SysTick）
+volatile uint32_t millis_tick = 0;
+void SysTick_Handler(void) {
+    millis_tick++;
+}
 
 
 int main(void) {
@@ -31,7 +32,7 @@ int main(void) {
     delay_init(72);       // 延时初始化
     TIM3_Init();        // 定时器3初始化（100ms中断）
 //    printf_init();
-	USART1_Init(115200);
+	//USART1_Init(115200);
 	
 	ADC1_Init();
 	dht11_init();
@@ -47,25 +48,22 @@ int main(void) {
 
 
 	
-//	//esp8266
-//	 // 系统初始化
-//    System_Init();
-//	delay_init(72);       // 延时初始化
-//    LED_Init();
-//    USART_MyInit();
-//    
-//    	
-//    // 连接到WiFi - 设置你的WiFi名称和密码
-//    //ESP_ConnectWiFi(myaccount, mypasswd);
-//		
-//		
-//     if (SysTick_Config(SystemCoreClock / 1000)) {
-//        while (1); // 初始化 SysTick 失败
-//    } 
+//esp8266
+	// 系统初始化
+    System_Init();
+    //LED_Init();
+    USART_MyInit();
+    
+		
+     if (SysTick_Config(SystemCoreClock / 1000)) {
+        while (1); // 初始化 SysTick 失败
+    } 
 
-//		
-//    // 连接到TCP服务器 - 设置上位机的IP和端口
-//    ESP_ConnectServer(myip, myport);
+	// 连接到WiFi - 设置你的WiFi名称和密码
+    ESP_ConnectWiFi(myaccount, mypasswd);
+	
+    // 连接到TCP服务器 - 设置上位机的IP和端口
+    ESP_ConnectServer(myip, myport);
 	
 	// 2. 主循环（只做“标志位检测+功能执行”）
     while (1) {
@@ -73,7 +71,7 @@ int main(void) {
         if (sys_data.flag_adc) {
 
 			
-			// 修改后（转换为与光照成正比的数值）
+			// （转换为与光照成正比的数值）
 			uint16_t adc_raw = ADC_GetLight();  // 读取原始ADC值
 			sys_data.prev_light = sys_data.light;  // 保存上一次转换后的值
 			sys_data.light = 1000 - adc_raw;    // 转换：反转原始值，与光照成正比
@@ -152,19 +150,16 @@ int main(void) {
             sys_data.flag_dht11 = 0;
         }
 		
-//		//esp8266
-//		 // 如果有数据接收完成，处理数据
-//        if(esp_cmd_complete) {
-//            ESP_ProcessReceivedData();
-//            esp_cmd_complete = 0;
-//            esp_rx_index = 0;
-//            memset((char*)esp_rx_buffer, 0, MAX_DATA_LEN);
-//        }
-//        
-//		ESP_SendData("111\r\n");
-		// 串口指令解析（接收完成后处理）
-		USART1_SendRealData();
-//		led_on();
+	//esp8266
+		// 如果有数据接收完成，处理数据
+        if(esp_cmd_complete) {
+            ESP_ProcessReceivedData();
+            esp_cmd_complete = 0;
+            esp_rx_index = 0;
+            memset((char*)esp_rx_buffer, 0, MAX_DATA_LEN);
+        }
+
+
         if (usart1_rx_complete) {
 			delay_ms(100);
             USART1_ParseCmd(); // 调用解析函数
