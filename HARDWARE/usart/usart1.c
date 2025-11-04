@@ -1,6 +1,6 @@
 // HARDWARE/usart/usart1.c
 #include <stdlib.h>
-#include "usart1.h"
+#include "usart/usart1.h"
 #include "sys_data.h"
 #include "servo/servo.h"
 #include "log.h"
